@@ -18,7 +18,8 @@ public class PlayerUtil : ProxyObject, IPlayerUtil
     {
         if (!TryClientInfo(entityId, out var clientInfo)) return;
 
-        GameUtils.KickPlayerForClientInfo(clientInfo, new GameUtils.KickPlayerData(GameUtils.EKickReason.ManualKick, _customReason: reason));
+        GameUtils.KickPlayerForClientInfo(clientInfo,
+            new GameUtils.KickPlayerData(GameUtils.EKickReason.ManualKick, _customReason: reason));
     }
 
     public void Teleport(int entityId, Vector3 position)
@@ -74,7 +75,11 @@ public class PlayerUtil : ProxyObject, IPlayerUtil
 
     public LandClaimOwner GetClaimOwner(int entityId, Vector3Int position)
     {
-        var playerData = GameManager.Instance.persistentPlayers?.GetPlayerDataFromEntityID(entityId);
+        var gm = GameManager.Instance;
+        var world = gm.World;
+        var players = gm.persistentPlayers;
+
+        var playerData = players?.GetPlayerDataFromEntityID(entityId);
         if (playerData == null) return LandClaimOwner.None;
 
         var checkPos = Vector3i.FromVector3Rounded(Vector3IntAdapter.ToGame(position));
@@ -86,33 +91,36 @@ public class PlayerUtil : ProxyObject, IPlayerUtil
         var minZ = checkPos.z - halfSize;
         var maxZ = checkPos.z + halfSize;
 
-        var chunkRadiusX = claimSize / 16 + 1;
-        var chunkRadiusZ = claimSize / 16 + 1;
+        var minChunkX = minX >> 4;
+        var maxChunkX = maxX >> 4;
+        var minChunkZ = minZ >> 4;
+        var maxChunkZ = maxZ >> 4;
 
-        for (var i = -chunkRadiusX; i <= chunkRadiusX; i++)
+        for (var cx = minChunkX; cx <= maxChunkX; cx++)
         {
-            var x = minX + i * 16;
-            for (var j = -chunkRadiusZ; j <= chunkRadiusZ; j++)
+            var worldX = cx << 4;
+            for (var cz = minChunkZ; cz <= maxChunkZ; cz++)
             {
-                var z = minZ + j * 16;
-                var chunk = (Chunk)GameManager.Instance.World.GetChunkFromWorldPos(new Vector3i(x, checkPos.y, z));
-                if (!chunk.IndexedBlocks.TryGetValue("lpblock", out var lpBlocks)) continue;
+                var worldZ = cz << 4;
+                var chunk = world.GetChunkFromWorldPos(new Vector3i(worldX, checkPos.y, worldZ)) as Chunk;
+                if (chunk == null || !chunk.IndexedBlocks.TryGetValue("lpblock", out var lpBlocks)) continue;
 
                 var worldPos = chunk.GetWorldPos();
                 foreach (var localPos in lpBlocks)
                 {
-                    var blockPos = localPos + worldPos;
+                    var blockX = localPos.x + worldPos.x;
+                    var blockZ = localPos.z + worldPos.z;
 
-                    if (blockPos.x < minX || blockPos.x > maxX || blockPos.z < minZ || blockPos.z > maxZ) continue;
+                    if (blockX < minX || blockX > maxX || blockZ < minZ || blockZ > maxZ) continue;
 
                     if (!BlockLandClaim.IsPrimary(chunk.GetBlock(localPos))) continue;
 
-                    var owner = GameManager.Instance.persistentPlayers.GetLandProtectionBlockOwner(blockPos);
-                    if (owner == null || !GameManager.Instance.World.IsLandProtectionValidForPlayer(owner)) continue;
+                    var blockPos = new Vector3i(blockX, localPos.y + worldPos.y, blockZ);
+                    var owner = players.GetLandProtectionBlockOwner(blockPos);
 
-                    if (playerData == owner)
-                        return LandClaimOwner.Self;
+                    if (owner == null || !world.IsLandProtectionValidForPlayer(owner)) continue;
 
+                    if (playerData == owner) return LandClaimOwner.Self;
                     return owner.ACL?.Contains(playerData.PrimaryId) == true
                         ? LandClaimOwner.Ally
                         : LandClaimOwner.Other;
@@ -133,12 +141,12 @@ public class PlayerUtil : ProxyObject, IPlayerUtil
         return ConnectionManager.Instance.Clients.list.Select(ClientInfoAdapter.FromGame).ToList();
     }
 
-    private bool TryGetEntityPlayer(int entityId, out EntityPlayer entityPlayer)
+    private static bool TryGetEntityPlayer(int entityId, out EntityPlayer entityPlayer)
     {
         return GameManager.Instance.World.Players.dict.TryGetValue(entityId, out entityPlayer);
     }
 
-    private bool TryClientInfo(int entityId, out ClientInfo clientInfo)
+    private static bool TryClientInfo(int entityId, out ClientInfo clientInfo)
     {
         clientInfo = ConnectionManager.Instance.Clients.ForEntityId(entityId);
         return clientInfo is { loginDone: true };
