@@ -30,14 +30,10 @@ public class PluginManager : IPluginManager
         var dllPath = GetPluginDllPath(name.Trim());
 
         if (!File.Exists(dllPath))
-        {
             throw new FileNotFoundException($"Plugin file not found: {dllPath}", dllPath);
-        }
 
         if (_plugins.ContainsKey(dllPath))
-        {
             throw new InvalidOperationException($"Plugin '{name}' is already loaded");
-        }
 
         var setup = new AppDomainSetup
         {
@@ -136,17 +132,9 @@ public class PluginManager : IPluginManager
                 LoadPlugin(pluginName);
                 Log.Out($"Successfully loaded plugin: {pluginName}");
             }
-            catch (FileNotFoundException)
-            {
-                Log.Error($"Plugin file not found: {pluginName}");
-            }
-            catch (InvalidOperationException ex)
-            {
-                Log.Error($"Plugin already loaded or invalid: {pluginName} - {ex.Message}");
-            }
             catch (Exception ex)
             {
-                Log.Error($"Unexpected error loading plugin '{pluginName}': {ex.Message}");
+                Log.Error($"Error loading plugin '{pluginName}': {ex.Message}");
             }
         }
     }
