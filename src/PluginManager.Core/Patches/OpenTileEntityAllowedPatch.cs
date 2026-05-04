@@ -12,22 +12,14 @@ public static class OpenTileEntityAllowedPatch
     static bool Prefix(GameManager __instance, ref bool __result, int _entityIdThatOpenedIt, TileEntity _te,
         string _customUi)
     {
-        Vector3i position;
-        if (_te.chunk == null)
-        {
-            var entity = GameManager.Instance.World.GetEntity(_te.entityId);
-            position = entity != null ? new Vector3i(entity.position) : Vector3i.zero;
-        }
-        else
-        {
-            position = _te.ToWorldPos();
-        }
+        var position = GetTileEntityPosition(__instance, _te);
 
         var tileEntityAccessAttemptEvent = new TileEntityAccessAttemptEvent(
             _entityIdThatOpenedIt,
-            _te.entityId,
-            EnumMapper<TileEntityType, Api.Contracts.TileEntityType>.Map(_te.GetTileEntityType()),
-            Vector3IntAdapter.FromGame(position)
+            new Api.Contracts.TileEntity(_te.entityId,
+                EnumMapper<TileEntityType, Api.Contracts.TileEntityType>.Map(_te.GetTileEntityType()),
+                Vector3IntAdapter.FromGame(position)
+            )
         );
         var result = ModContext.EventRunner.Publish(tileEntityAccessAttemptEvent, HookMode.Pre);
 
@@ -35,5 +27,14 @@ public static class OpenTileEntityAllowedPatch
 
         __result = false;
         return false;
+    }
+
+    private static Vector3i GetTileEntityPosition(GameManager gameManager, TileEntity te)
+    {
+        if (te.chunk != null)
+            return te.ToWorldPos();
+
+        var entity = gameManager.World?.GetEntity(te.entityId);
+        return entity != null ? new Vector3i(entity.position) : Vector3i.zero;
     }
 }
