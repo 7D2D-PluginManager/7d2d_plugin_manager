@@ -52,7 +52,9 @@
         <Compile Include="Adapters\Vector3Adapter.cs"/>
         <Compile Include="Adapters\Vector3IntAdapter.cs"/>
         <Compile Include="Application.cs"/>
-        <Compile Include="Capabilities\Events\EventBus.cs"/>
+        <Compile Include="Capabilities\Events\EventRegistry.cs" />
+        <Compile Include="Capabilities\Events\EventDispatcher.cs" />
+        <Compile Include="Capabilities\Events\HandlerBucket.cs" />
         <Compile Include="Capabilities\GeoIP\GeoIpDataStorage.cs"/>
         <Compile Include="Capabilities\GeoIP\GeoIpService.cs"/>
         <Compile Include="Capabilities\GeoIP\IGeoIpService.cs"/>

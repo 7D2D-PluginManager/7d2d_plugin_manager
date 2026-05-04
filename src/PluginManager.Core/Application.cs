@@ -19,13 +19,14 @@ public class Application : IModApi
 {
     public void InitMod(Mod modInstance)
     {
-        var eventBus = new EventBus();
+        var eventRegistry = new EventRegistry();
+        var eventDispatcher = new EventDispatcher(eventRegistry);
         var commandManager = new CommandManager();
         var playerLanguageStore = new PlayerLanguageStore();
         var geoIpDataStorage = new GeoIpDataStorage();
 
         var capabilities = new CapabilityRegistry();
-        capabilities.Register<IEventHandlers>(eventBus);
+        capabilities.Register<IEventHandlers>(eventRegistry);
         capabilities.Register<ILogger>(new Logger());
         capabilities.Register<ICommandManager>(commandManager);
         capabilities.Register<IPlayerUtil>(new PlayerUtil());
@@ -40,7 +41,7 @@ public class Application : IModApi
         ModContext.Config = new Config();
         ModContext.PluginManager = pluginManager;
         ModContext.Capabilities = capabilities;
-        ModContext.EventRunner = eventBus;
+        ModContext.EventRunner = eventDispatcher;
         ModContext.CommandRegistry = commandManager;
         ModContext.PlayerLanguageStore = playerLanguageStore;
         ModContext.GeoIpService = new GeoIpService(Path.Combine(modInstance.Path, "GeoIp", "GeoLite2-City.mmdb"));

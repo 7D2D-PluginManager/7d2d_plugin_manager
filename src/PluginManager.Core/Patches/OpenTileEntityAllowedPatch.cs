@@ -21,6 +21,7 @@ public static class OpenTileEntityAllowedPatch
                 Vector3IntAdapter.FromGame(position)
             )
         );
+
         var result = ModContext.EventRunner.Publish(tileEntityAccessAttemptEvent, HookMode.Pre);
 
         if (result == HookResult.Continue) return true;
@@ -34,7 +35,7 @@ public static class OpenTileEntityAllowedPatch
         if (te.chunk != null)
             return te.ToWorldPos();
 
-        var entity = gameManager.World?.GetEntity(te.entityId);
+        var entity = gameManager.World.GetEntity(te.entityId);
         return entity != null ? new Vector3i(entity.position) : Vector3i.zero;
     }
 }
