@@ -141,6 +141,13 @@ public class PlayerUtil : ProxyObject, IPlayerUtil
         return ConnectionManager.Instance.Clients.list.Select(ClientInfoAdapter.FromGame).ToList();
     }
 
+    public int GetPermissionLevelByEntityId(int entityId)
+    {
+        return TryClientInfo(entityId, out var clientInfo)
+            ? GameManager.Instance.adminTools.Users.GetUserPermissionLevel(clientInfo)
+            : 1000;
+    }
+
     private static bool TryGetEntityPlayer(int entityId, out EntityPlayer entityPlayer)
     {
         return GameManager.Instance.World.Players.dict.TryGetValue(entityId, out entityPlayer);
